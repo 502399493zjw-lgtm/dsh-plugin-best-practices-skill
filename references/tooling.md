@@ -16,15 +16,19 @@ DSH_SKILL="$DSH_SKILL_ROOT/dsh-plugin-best-practices"
 ```sh
 node "$DSH_SKILL/scripts/init-plugin.mjs" \
   --target ./dsh-example \
-  --name dsh-example \
+  --name @your-scope/dsh-example \
   --plugin-id example \
   --dsh-version 0.1.0-rc.8 \
   --cordis-version 4.0.1 \
-  --browser
+  --browser \
+  --public \
+  --repository your-owner/dsh-example \
+  --license MIT
 ```
 
 - `--target` 必须是不存在或为空的目录；脚本拒绝覆盖已有文件。
 - 默认生成 Host 包；`--browser` 额外生成 `./client`、`dsh.client` 和 Browser bundle 配置。
+- `--public` 显式选择公共分发元数据，并要求 `--repository owner/repo` 与非 `UNLICENSED` 的 `--license`；它不会创建许可证授权文本、远程仓库或 npm 包，发布前仍要添加匹配的 `LICENSE`。
 - 模板是最小可构建基线，不替代业务契约、失败测试、具体 DSH API 依赖和 README。
 - 生成后运行 `pnpm install && pnpm test && pnpm run build && pnpm run verify:package`。
 
@@ -147,12 +151,48 @@ node "$DSH_SKILL/scripts/cleanup-test-resources.mjs" \
 
 目录必须位于系统临时目录或显式 `--allow-root` 下，并包含 owner/runId marker；进程命令必须含 manifest 给出的唯一标记。任一校验不满足时拒绝清理。不要为了“收尾干净”扩大允许根目录，更不要把仓库根、用户目录或 `/` 作为清理目标。
 
+## 7. npm 发布只读预检
+
+先完成 package verification、敏感扫描、pack 和 stock DSH smoke，再对准备发布的同一 tarball 运行：
+
+```sh
+PACKAGE_TARBALL=artifacts/package/your-scope-dsh-example-0.1.0-rc.1.tgz
+node "$DSH_SKILL/scripts/release-preflight.mjs" \
+  --project . \
+  --tarball "$PACKAGE_TARBALL" \
+  --tag next \
+  --result artifacts/release/<run-id>/result.json \
+  --provenance artifacts/release/<run-id>/provenance.json
+```
+
+脚本检查：干净 commit、公共 package/repository/license/support 元数据、`dsh.bundle.patch`、registry 登录态、精确版本未占用、显式 dist-tag，以及 `npm publish --dry-run` 是否把 exact tarball 解析成预期 `name@version`。预发布版本拒绝使用 `latest`。脚本只读且绝不发布；通过不等于授权 `npm publish`。
+
+真正发布时只发布这份已经 smoke 且已记录 SHA-256 的 `.tgz`。用户必须另行确认包名、版本、registry 和 tag；完整授权与命令见 [发布、发现与退役](publish-and-discovery.md)。
+
+## 8. npm registry 发布后复核
+
+发布完成后，用有限次数的最终一致性重试下载 registry 版本，并与发布前 tarball 做字节摘要核对：
+
+```sh
+node "$DSH_SKILL/scripts/verify-registry-release.mjs" \
+  --project . \
+  --package @your-scope/dsh-example@0.1.0-rc.1 \
+  --expected-tarball "$PACKAGE_TARBALL" \
+  --expect-tag next \
+  --result artifacts/registry/<run-id>/result.json \
+  --provenance artifacts/registry/<run-id>/provenance.json
+```
+
+脚本用 `npm pack --ignore-scripts` 下载精确版本、比对 SHA-256，并要求每个 `--expect-tag` 指向该版本；临时下载目录无论成功或失败都会清理。它不替代最后一次以 registry 包名执行的 stock DSH add/dump/start/probe。
+
 ## 推荐门禁顺序
 
 ```text
 test → build → verify-package → scan-sensitive → pack
      → scan unpacked tarball → verify rc.8 release → stock DSH smoke
-     → UI/GIF review（仅相关任务）→ cleanup audit
+     → release-preflight（仅公开发布）→ 经授权发布 exact tarball
+     → verify-registry-release → registry 包名 stock smoke
+     → Topic/社区目录（分别授权）→ UI/GIF review（仅相关任务）→ cleanup audit
 ```
 
 把每一步写入标准 `result.json`/`provenance.json`，不要用后一层成功倒推前一层已经执行。

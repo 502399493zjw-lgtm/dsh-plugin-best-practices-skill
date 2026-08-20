@@ -2,6 +2,8 @@
 
 证据分成机器结果、来源声明和媒体审查三层。模板与 JSON Schema 位于 `assets/evidence/`。
 
+发布生命周期沿用相同 pair：`release-preflight.mjs` 写 `kind: npm-release-preflight`，只证明发布前的只读门禁；`verify-registry-release.mjs` 写 `kind: npm-registry-release-verification`，证明 registry 下载字节与显式 dist-tag。两者都不能单独证明 npm 写入已获授权或 package-name stock DSH 安装成功。
+
 ## 标准文件
 
 ```text
