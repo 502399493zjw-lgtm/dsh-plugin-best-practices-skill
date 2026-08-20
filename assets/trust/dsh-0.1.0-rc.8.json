@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "package": "@deepseek-ai/dsh",
+  "version": "0.1.0-rc.8",
+  "source": {
+    "kind": "npm",
+    "registryMetadata": "https://registry.npmjs.org/@deepseek-ai/dsh/0.1.0-rc.8",
+    "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh/-/dsh-0.1.0-rc.8.tgz",
+    "recordedAt": "2026-08-20"
+  },
+  "distribution": {
+    "integrity": "sha512-VQU5NlomrKLRgcXuOf+sxWFvqxPA8q9vMhrKPlPPXiOJEhGlGlAdiyxZvZxkCVI+v0zbhe21cY3/luLyxpSzzA==",
+    "shasum": "sha1:61bb2c44f1279329b128d47068240c36b32afa05",
+    "sha256": "sha256:b8b0db6f3bcf3aed77c25bb901fdb9d0ef0f79bd8ca403b52e34c14a71d1487f",
+    "size": 33651,
+    "unpackedSize": 119939,
+    "fileCount": 20,
+    "registrySignature": {
+      "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+      "signature": "MEYCIQCoEIFdw1MNvdico3Z/9Bb1Gcs36AQjI3EP7ZURmOUGpQIhAKReQGXiiCBuJ/i/JgbdtYo1MRiPoZna5GVW6toXyrcx"
+    }
+  },
+  "entry": {
+    "path": "lib/bin.js",
+    "sha256": "sha256:c0226687bb20f45c603ec6fe50f3de16d1c3510c3a803304ec575ef9bc366c62",
+    "size": 8274
+  }
+}

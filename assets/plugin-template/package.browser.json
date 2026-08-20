@@ -1,0 +1,25 @@
+{
+  "exports": {
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    }
+  },
+  "files": [
+    "lib/client.js"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-client-runtime": "{{DSH_VERSION}}"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-client-runtime": "{{DSH_VERSION}}"
+  }
+}

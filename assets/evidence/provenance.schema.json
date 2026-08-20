@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deepseek.example/schemas/dsh-plugin-provenance.schema.json",
+  "title": "DSH plugin evidence provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "runId", "generatedAt", "source", "runtime", "claim", "media", "exceptions", "sensitiveReview"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "runId": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "dirty", "packageChecksum"],
+      "properties": {
+        "commit": { "type": ["string", "null"] },
+        "dirty": { "type": ["boolean", "null"] },
+        "packageChecksum": { "type": ["string", "null"] }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dsh", "cordis", "pluginCordisPeer", "dshExecutable", "node", "os"],
+      "properties": {
+        "dsh": { "type": ["string", "null"] },
+        "cordis": { "type": ["string", "null"] },
+        "pluginCordisPeer": { "type": ["string", "null"] },
+        "dshExecutable": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["requested", "resolvedBasename", "checksum", "expectedChecksum", "checksumVerified", "source"],
+          "properties": {
+            "requested": { "type": "string" },
+            "resolvedBasename": { "type": "string" },
+            "checksum": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "expectedChecksum": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+            "checksumVerified": { "type": "boolean" },
+            "source": { "type": ["string", "null"] }
+          }
+        },
+        "node": { "type": ["string", "null"] },
+        "os": { "type": ["string", "null"] }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execution", "scope", "notProven"],
+      "properties": {
+        "execution": { "enum": ["real", "mock", "hybrid"] },
+        "scope": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "notProven": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "media": {
+      "type": ["array", "null"],
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "purposes", "path", "checksum", "viewport"],
+        "properties": {
+          "kind": { "enum": ["validation-gif", "showcase-gif", "video", "trace", "other"] },
+          "purposes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["validation", "showcase", "debug"] } },
+          "path": { "type": "string" },
+          "checksum": { "type": ["string", "null"] },
+          "viewport": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["width", "height"],
+            "properties": {
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "exceptions": { "type": "array", "items": { "type": "string" } },
+    "sensitiveReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "scannerResult"],
+      "properties": {
+        "status": { "enum": ["pass", "fail", "not-run"] },
+        "scannerResult": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

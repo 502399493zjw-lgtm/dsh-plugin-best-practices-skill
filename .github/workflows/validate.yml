@@ -1,0 +1,67 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  skill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Validate repository structure
+        run: node .github/scripts/validate.mjs
+
+      - name: Check executable scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in scripts/*.mjs .github/scripts/*.mjs; do
+            node --check "$file"
+          done
+
+      - name: Verify official DSH rc.8 release bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/dsh-release/extracted" "$RUNNER_TEMP/dsh-release/evidence"
+          npm pack @deepseek-ai/dsh@0.1.0-rc.8 --ignore-scripts \
+            --pack-destination "$RUNNER_TEMP/dsh-release"
+          tar -xzf "$RUNNER_TEMP/dsh-release/deepseek-ai-dsh-0.1.0-rc.8.tgz" \
+            -C "$RUNNER_TEMP/dsh-release/extracted"
+          node scripts/verify-dsh-release.mjs \
+            --tarball "$RUNNER_TEMP/dsh-release/deepseek-ai-dsh-0.1.0-rc.8.tgz" \
+            --entry "$RUNNER_TEMP/dsh-release/extracted/package/lib/bin.js" \
+            --result "$RUNNER_TEMP/dsh-release/evidence/result.json" \
+            --provenance "$RUNNER_TEMP/dsh-release/evidence/provenance.json"
+
+      - name: Generate and verify Browser plugin fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/init-plugin.mjs \
+            --target "$RUNNER_TEMP/dsh-skill-fixture" \
+            --name dsh-skill-fixture \
+            --plugin-id skill-fixture \
+            --browser
+          pnpm --dir "$RUNNER_TEMP/dsh-skill-fixture" install --no-frozen-lockfile
+          pnpm --dir "$RUNNER_TEMP/dsh-skill-fixture" test
+          pnpm --dir "$RUNNER_TEMP/dsh-skill-fixture" run build
+          pnpm --dir "$RUNNER_TEMP/dsh-skill-fixture" run verify:package
+          mkdir -p "$RUNNER_TEMP/package"
+          pnpm --dir "$RUNNER_TEMP/dsh-skill-fixture" pack \
+            --pack-destination "$RUNNER_TEMP/package"
