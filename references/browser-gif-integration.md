@@ -16,7 +16,7 @@ Agent 根据验收覆盖和展示效果判断是否复用：核心路径既能�
 ## 按验证主张选择 real/mock
 
 - 日常本地迭代、布局、交互、加载、空数据和受控错误状态可以使用 mock，必须在产物和审查报告中标注。
-- PR GIF 必须来自目标 PR 的真实代码树。需要证明插件安装或 DSH 集成时，还要使用实际构建产物和 stock DSH 环境。
+- PR GIF 必须来自目标 PR 的真实代码树。作为 README、PR 或 DSH Market“安装后预览”的展示 GIF，默认使用目标 tarball 安装到隔离 stock DSH rc.8 后的实际页面；DSH 安装链路不能用 mock 或源码 dev server 冒充。外部 Provider 或演示数据可以按场景 mock，但必须显式标注。
 - 只有结论涉及真实 Provider、账号、模型调用或外部服务时，才必须运行对应真实链路。纯 UI 改动不为了形式调用真实模型。
 - 没有 API key、真实模型或可运行 server 时，记录为未验证；可以提供明确标注的 mock 展示，但不能声称真实流程已经通过。
 
@@ -31,7 +31,7 @@ Agent 根据验收覆盖和展示效果判断是否复用：核心路径既能�
 | 需要随文档版本化的小型 GIF | 项目约定的 `docs/assets/` 或 `.github/assets/` | 使用相对路径，确保 fork、分支和 npm 页面尽量可读 |
 | 原始录制、源帧、trace、失败日志 | 本地 gitignored artifacts 或 CI artifacts | 不嵌入 README，不提交到功能分支 |
 
-README 和 PR 默认引用一个最能说明插件价值的短展示 GIF。它可以与验收 GIF 复用；如果分开，完整验收证据留在 artifacts/CI，PR 说明两者的用途和范围。不要额外要求截图，也不要用大段媒体掩盖缺少的自动断言。
+README 和 PR 默认引用一个最能说明插件价值、可供安装前决策的短展示 GIF。它可以与验收 GIF 复用；如果分开，完整验收证据留在 artifacts/CI，PR 说明两者的用途和范围。不要额外要求截图，也不要用大段媒体掩盖缺少的自动断言。
 
 Markdown 示例：
 
