@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { mergeObjects, renderTemplate } from './_shared.mjs'
+import { normalizeGitHubRepository, validateSpdxExpression } from './_release.mjs'
 
 const HELP = `Usage: init-plugin.mjs --target <dir> --name <npm-name> --plugin-id <id> [options]
 
@@ -12,6 +13,9 @@ Options:
   --dsh-version <version>     Target DSH version (default: 0.1.0-rc.8)
   --cordis-version <version>  Target Cordis version (default: 4.0.1)
   --browser                   Include a Browser client entry
+  --public                    Add public npm distribution metadata
+  --repository <owner/repo>   GitHub repository (required with --public)
+  --license <SPDX>            Package license (required with --public)
   --help                      Show this help
 `
 
@@ -23,6 +27,9 @@ const { values } = parseArgs({
     'dsh-version': { type: 'string', default: '0.1.0-rc.8' },
     'cordis-version': { type: 'string', default: '4.0.1' },
     browser: { type: 'boolean', default: false },
+    public: { type: 'boolean', default: false },
+    repository: { type: 'string' },
+    license: { type: 'string' },
     help: { type: 'boolean', default: false },
   },
   strict: true,
@@ -47,6 +54,15 @@ const exactSemver = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za
 for (const key of ['dsh-version', 'cordis-version']) {
   if (!exactSemver.test(values[key])) fail(`--${key} must be an exact semver, not a range, tag, URL, or local path`)
 }
+if (values.public && !values.repository) fail('--repository is required with --public')
+if (values.public && !values.license) fail('--license is required with --public')
+let repositoryMetadata = null
+try {
+  if (values.repository) repositoryMetadata = normalizeGitHubRepository(values.repository)
+  if (values.license) validateSpdxExpression(values.license)
+} catch (error) {
+  fail(error.message)
+}
 
 const target = resolve(values.target)
 let reservation = null
@@ -60,6 +76,7 @@ const templateRoot = join(skillRoot, 'assets', 'plugin-template')
 const typeName = values['plugin-id'].split('-').map(part => `${part[0].toUpperCase()}${part.slice(1)}`).join('')
 const replacements = {
   PACKAGE_NAME: values.name,
+  TARBALL_BASENAME: values.name.startsWith('@') ? values.name.slice(1).replace('/', '-') : values.name,
   PLUGIN_ID: values['plugin-id'],
   TYPE_NAME: typeName,
   DSH_VERSION: values['dsh-version'],
@@ -83,6 +100,14 @@ try {
   const packageJson = values.browser
     ? mergeObjects(basePackage, JSON.parse(renderTemplate(readFileSync(join(templateRoot, 'package.browser.json'), 'utf8'), replacements)))
     : basePackage
+  if (values.license) packageJson.license = values.license
+  if (repositoryMetadata !== null) Object.assign(packageJson, repositoryMetadata)
+  if (values.public) {
+    packageJson.publishConfig = {
+      access: 'public',
+      registry: 'https://registry.npmjs.org/',
+    }
+  }
   writeFileSync(join(staging, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`)
   copyRenderedTree(join(templateRoot, 'base'), staging, replacements)
 
@@ -90,7 +115,10 @@ try {
 
   mkdirSync(join(staging, 'scripts'), { recursive: true })
   cpSync(join(skillRoot, 'scripts', '_shared.mjs'), join(staging, 'scripts', '_shared.mjs'))
+  cpSync(join(skillRoot, 'scripts', '_release.mjs'), join(staging, 'scripts', '_release.mjs'))
   cpSync(join(skillRoot, 'scripts', 'verify-package.mjs'), join(staging, 'scripts', 'verify-package.mjs'))
+  cpSync(join(skillRoot, 'scripts', 'release-preflight.mjs'), join(staging, 'scripts', 'release-preflight.mjs'))
+  cpSync(join(skillRoot, 'scripts', 'verify-registry-release.mjs'), join(staging, 'scripts', 'verify-registry-release.mjs'))
 
   assertSameEmptyDirectory(target, reservation)
   const emptyBackup = `${staging}.empty-target`

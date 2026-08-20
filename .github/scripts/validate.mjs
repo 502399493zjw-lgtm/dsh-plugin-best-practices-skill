@@ -14,9 +14,13 @@ for (const required of [
   'assets/evidence/result.schema.json',
   'assets/evidence/provenance.schema.json',
   'assets/trust/dsh-0.1.0-rc.8.json',
+  'references/publish-and-discovery.md',
   'scripts/init-plugin.mjs',
+  'scripts/release-preflight.mjs',
+  'scripts/verify-registry-release.mjs',
   'scripts/verify-package.mjs',
   'scripts/smoke-stock-dsh.mjs',
+  'tests/lifecycle.test.mjs',
 ]) {
   if (!existsSync(join(root, required))) failures.push(`missing required file: ${required}`)
 }

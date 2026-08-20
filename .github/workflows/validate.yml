@@ -10,7 +10,7 @@ permissions:
 jobs:
   skill:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v7
@@ -34,6 +34,9 @@ jobs:
             node --check "$file"
           done
 
+      - name: Run behavioral tests
+        run: node --test tests/*.test.mjs
+
       - name: Verify official DSH rc.8 release bytes
         shell: bash
         run: |
@@ -48,6 +51,11 @@ jobs:
             --entry "$RUNNER_TEMP/dsh-release/extracted/package/lib/bin.js" \
             --result "$RUNNER_TEMP/dsh-release/evidence/result.json" \
             --provenance "$RUNNER_TEMP/dsh-release/evidence/provenance.json"
+          mkdir -p "$RUNNER_TEMP/stock-dsh"
+          pnpm --dir "$RUNNER_TEMP/stock-dsh" init
+          pnpm --dir "$RUNNER_TEMP/stock-dsh" add \
+            "$RUNNER_TEMP/dsh-release/deepseek-ai-dsh-0.1.0-rc.8.tgz" \
+            --ignore-scripts
 
       - name: Generate and verify Browser plugin fixture
         shell: bash
@@ -65,3 +73,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/package"
           pnpm --dir "$RUNNER_TEMP/dsh-skill-fixture" pack \
             --pack-destination "$RUNNER_TEMP/package"
+          node scripts/smoke-stock-dsh.mjs \
+            --project "$RUNNER_TEMP/dsh-skill-fixture" \
+            --tarball "$RUNNER_TEMP/package/dsh-skill-fixture-0.1.0.tgz" \
+            --dsh-entry "$RUNNER_TEMP/stock-dsh/node_modules/@deepseek-ai/dsh/lib/bin.js" \
+            --execution real \
+            --dsh-source npm:@deepseek-ai/dsh@0.1.0-rc.8 \
+            --expected-dsh-sha256 sha256:c0226687bb20f45c603ec6fe50f3de16d1c3510c3a803304ec575ef9bc366c62 \
+            --expected-dsh-version 0.1.0-rc.8 \
+            --artifacts "$RUNNER_TEMP/smoke"

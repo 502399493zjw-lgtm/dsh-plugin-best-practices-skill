@@ -6,11 +6,13 @@
 
 当前基线：DSH `0.1.0-rc.8`、Cordis `4.0.1`、Node.js `^22.19.0 || >=24.0.0`、pnpm `11.7.0`。本项目不是 DeepSeek 官方项目。
 
+本仓库自身是 **Agent Skill**，不是可用 `dsh plugin add` 安装的 DSH Bundle。它指导 Agent 生成真正声明 `dsh.bundle` 的插件；`dsh-plugin` Topic 表示主题相关性，不改变本仓库的 artifact 类型，也不代表本 Skill 符合只收可安装 Bundle 的社区插件目录门禁。
+
 ## 三个核心价值
 
 ### 1. 开发流程标准化
 
-把插件开发统一为独立项目、稳定 `main`、按需 branch/worktree、目标版本、测试、构建、打包和 GitHub 交付。初始化、包校验、stock smoke、敏感扫描和资源清理都有固定脚本可复用，Agent 不必每次重新猜 manifest、Browser loader 或清理规则，也不会为了开发插件直接修改 DSH 核心。
+把插件开发统一为独立项目、稳定 `main`、按需 branch/worktree、目标版本、测试、构建、打包、发布、发现与退役。初始化、包校验、stock smoke、发布前预检、registry 字节复核、敏感扫描和资源清理都有固定脚本可复用，Agent 不必每次重新猜 manifest、Browser loader 或清理规则，也不会为了开发插件直接修改 DSH 核心。
 
 ### 2. 验收流程全面化
 
@@ -60,7 +62,16 @@ stock DSH rc.8（目标运行时，不直接改核心）
 stock smoke / 用户现场预览 / 展示 GIF
                          │
                          ▼
-敏感扫描 → GitHub PR/CI → 按 owner/runId 清理
+敏感扫描 → GitHub PR/CI → exact tarball 发布前门禁
+                         │
+                         ▼
+           经授权发布 → registry 字节/tag 复核
+                         │
+                         ▼
+       包名 stock smoke → Topic/社区目录（分别授权）
+                         │
+                         ▼
+               维护/弃用/归档 → 按 owner/runId 清理
 ```
 
 插件必须拥有自己的依赖、测试、版本和发布边界。直接修改 DSH 源码，会让核心改动与插件改动混在一起，也无法证明插件能被未修改的 stock DSH 安装。`main` 保留稳定基线；worktree 按并行度、工作区状态和 PR 需求使用，不是一刀切要求。
@@ -73,16 +84,20 @@ stock smoke / 用户现场预览 / 展示 GIF
 - Host 持有凭证和特权 I/O；Browser、日志、GIF 与证据只包含最小脱敏数据。
 - 先定义用例和标准，再构建验收证据；展示 GIF 负责表达价值，是否复用由 Agent 判断。
 - GitHub 交付核对远程 commit、CI 与媒体实际渲染；未经授权不合并、不发 npm、不创建 Release。
+- 公开发布只使用已通过 smoke 的同一 `.tgz`；npm publish、dist-tag、Release、Topic、目录 PR、deprecate 和 archive 分别授权。
+- 纯 Agent Skill 不冒充 DSH Bundle；社区目录的 `skill` 分类仍要求条目本身声明真实 `dsh.bundle`。
 
 ## 可执行工具箱
 
 - `init-plugin.mjs`：初始化 Host-only 或 Host + Browser 独立插件。
 - `verify-package.mjs`：检查包入口、exports/files、patch 和 Browser 声明。
 - `smoke-stock-dsh.mjs`：在隔离 profile 中完成 install、dump、start 和 probe。
+- `release-preflight.mjs`：只读核对登录态、版本占用、公共元数据、dist-tag 和 exact tarball dry-run。
+- `verify-registry-release.mjs`：发布后下载 registry 版本并比对 tarball SHA-256 与显式 dist-tag。
 - `scan-sensitive.mjs`：扫描准备提交的代码、证据和媒体。
 - `cleanup-test-resources.mjs`：按 owner marker 与 runId 安全清理资源。
 
-证据统一为 `result.json`、`provenance.json` 和按需生成的 GIF review。具体命令见 [可执行工具箱](references/tooling.md)，版本与扩展点见 [兼容性矩阵](references/compatibility-matrix.md)。
+证据统一为 `result.json`、`provenance.json` 和按需生成的 GIF review。具体命令见 [可执行工具箱](references/tooling.md)，版本与扩展点见 [兼容性矩阵](references/compatibility-matrix.md)，npm/GitHub 分发、Topic、社区目录和退役规则见 [发布、发现与退役](references/publish-and-discovery.md)。
 
 ## 给任意 Agent 使用
 
@@ -112,9 +127,12 @@ DSH_SKILL=/path/to/dsh-plugin-best-practices-skill
 
 node "$DSH_SKILL/scripts/init-plugin.mjs" \
   --target ./dsh-example \
-  --name dsh-example \
+  --name @your-scope/dsh-example \
   --plugin-id example \
-  --browser
+  --browser \
+  --public \
+  --repository your-owner/dsh-example \
+  --license MIT
 
 cd ./dsh-example
 pnpm install
@@ -123,7 +141,9 @@ pnpm run build
 pnpm run verify:package
 ```
 
-完整工作流从 [SKILL.md](SKILL.md) 开始。仓库 CI 会验证 Skill 结构、脚本语法、rc.8 发行完整性，并生成 Browser 插件 fixture 完成 test、build、package verification 和 pack。
+`--public` 只生成发布元数据，不会创建远程仓库、许可证授权文本或 npm 包；发布前仍要添加匹配的 `LICENSE`，并单独取得外部写操作授权。
+
+完整工作流从 [SKILL.md](SKILL.md) 开始。仓库 CI 会验证 Skill 结构、脚本行为、rc.8 发行完整性，并生成 Browser 插件 fixture 完成 test、build、package verification、pack 和真实 stock DSH rc.8 tarball smoke。
 
 ## 许可证
 

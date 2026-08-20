@@ -17,7 +17,8 @@
     "lib/index.js",
     "lib/types/**/*.d.ts",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "license": "UNLICENSED",
   "engines": {
@@ -34,6 +35,9 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "verify:package": "node scripts/verify-package.mjs",
+    "release:preflight": "node scripts/release-preflight.mjs",
+    "release:verify": "node scripts/verify-registry-release.mjs",
+    "prepare": "pnpm run build",
     "prepack": "pnpm run build && pnpm run verify:package"
   },
   "peerDependencies": {
