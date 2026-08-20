@@ -21,6 +21,10 @@ description: Use when designing, implementing, testing, packaging, installing, r
 用户要求 GitHub？ ──否──> 本地可审查交付，不自动 commit/push/PR
        │是
        └────────> commit/push/PR/CI 闭环；用户可见 GUI/交互再做展示媒体；不自动合并或发布
+
+用户要亲自查看？ ──否──> 按任务所需交付自动证据/媒体
+       │是
+       └────────> 目标代码树 tarball + 隔离 stock rc.8 → loopback 预览地址；看完再按 runId 清理
 ```
 
 统一以 DSH `0.1.0-rc.8`、Cordis `4.0.1` 为当前活动基线，并查阅 [兼容性矩阵](references/compatibility-matrix.md)。初始化、实现、测试、证据和 PR 兼容声明都使用这组精确版本；real smoke 使用工具箱内置的 rc.8 发行完整性清单校验稳定包入口。除非用户明确要求执行“基线迁移”，不要为单个插件另选 DSH 版本或扩大版本范围。
@@ -33,7 +37,7 @@ description: Use when designing, implementing, testing, packaging, installing, r
 4. **实现**：Host 持有凭证、文件系统、进程和内部异常；Browser 只消费 JSON-safe 的最小脱敏投影。
 5. **分层验证**：按改动和主张依次选择单元/组合测试、构建、`verify-package`、敏感信息扫描、`pnpm pack`、固定版本 stock DSH tarball 安装和 smoke；不把发布级流程强加给纯文档或无关小改动。证据规则见 [测试与证据](references/test-evidence.md)。
 6. **UI 与 GIF**：需要 GIF 证据时，先定义验收用例和标准，再设计验收 GIF；展示 GIF 以说明功能价值为目标。Agent 判断两者是否复用，作为验收证据的 GIF 由独立审查者判定。详见 [Browser 与 GIF](references/browser-gif-integration.md)。
-7. **交付与清理**：本地交付保留可审查 diff；GitHub 交付完成 PR 和 CI 检查，涉及用户可见 GUI/交互时再加入展示媒体。最后清理只属于本次 run 的进程、临时 profile、端口和冗余素材。详见 [项目与 PR](references/project-and-pr.md)。
+7. **预览、交付与清理**：用户要求亲自查看时，用目标代码树的 tarball 在隔离 stock rc.8 profile 启动仅监听 loopback 的现场预览，交付 URL、版本、commit/dirty 状态和 real/mock 范围；GitHub 交付的预览必须对应目标 commit，本地预览不得为获得 commit 而擅自提交。用户看完或到达约定超时后再清理。本地交付保留可审查 diff；GitHub 交付完成 PR 和 CI 检查，用户可见 GUI/交互再加入展示媒体。详见 [项目与 PR](references/project-and-pr.md)。
 
 ## 核心不变量
 
@@ -59,6 +63,7 @@ description: Use when designing, implementing, testing, packaging, installing, r
 - **所有任务**：契约和验收用例明确；验证强度与改动及对外主张相称；实际修改与未验证风险已报告。
 - **代码或包改动**：聚焦测试、构建、包校验和敏感扫描通过；影响安装或发布面时再执行 `pnpm pack` 与 stock DSH smoke。
 - **发布相关改动**：tarball 内容正确，并在固定版本、隔离 `DSH_HOME` 的 stock DSH 中完成与主张相符的 install/dump/start/probe；否则明确标为未做。
+- **用户现场预览**：被要求时，预览运行目标代码树的 tarball 与 stock rc.8 隔离 profile，只监听 loopback；交付可访问地址、commit/dirty 状态与来源信息，并在确认结束或约定超时后清理。Host-only 插件交付状态/API/CLI 观察面，不虚构 UI。
 - **Browser 行为改动**：自动断言覆盖关键状态；需要或使用 GIF 时，最终编码文件可读且无敏感信息，验收 GIF 有独立 review 结论。纯文案、内部重构和非前端任务不强制 GIF。
 - **GitHub 交付**：远程 head 与报告 commit 一致，required checks 状态已读取；涉及用户可见 GUI/交互时，PR 展示 GIF 能表达功能价值并在 GitHub 实际渲染，Host-only 或纯内部改动不强制媒体。
 - **收尾**：证据符合 schema，临时资源已按 owner/runId 清理，Git 状态准确；未经授权不创建远程、不合并、不发布 npm、不创建 Release。

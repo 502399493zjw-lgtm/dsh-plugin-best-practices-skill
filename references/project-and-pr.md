@@ -52,6 +52,19 @@ README.md
 - 测试、验收/展示 GIF、录制源帧和临时 `DSH_HOME` 归属于当前任务；
 - 需要跨 worktree 复用的结果应通过提交、补丁或明确说明传递，不直接复制未审查的状态文件。
 
+## 用户亲自预览 DSH + 插件
+
+当用户要求“我自己打开看看”时，交付的是目标代码在真实 DSH 中运行的临时现场，而不只是源码、测试日志或 GIF。按以下顺序执行：
+
+1. 锁定要预览的代码树，运行适用测试、构建和 `verify-package`，再从该代码树生成 npm tarball。GitHub 交付必须对应目标 commit；本地未提交预览记录基线 commit、dirty 状态和 diff 来源，不为获得 commit 而擅自提交。不要拿另一个 worktree 的旧包或未记录源码目录代替。
+2. 使用工具箱信任清单核验过的 stock DSH `0.1.0-rc.8` 稳定包入口；为当前 run 创建隔离 `DSH_HOME`、owner marker 和 runId，并使用最小环境，不能继承无关 token/凭证。
+3. 底层安装链路是 `dsh plugin --profile web add <tarball>`；安装后先执行 dump-config 和必要 probe，确认组合配置来自该 tarball。
+4. 选择空闲端口，以 `dsh --profile web --no-open --host 127.0.0.1 --port <port>` 启动现场。向用户报告预览 URL、commit/dirty 状态、tarball、DSH/Cordis 版本、real/mock、已通过的用例和未验证范围。
+5. 保持进程存活，让用户从同一台机器的浏览器打开 `http://127.0.0.1:<port>/` 自由操作。用户未明确授权时，不监听 `0.0.0.0`，不创建公网隧道或外部部署。
+6. 用户说已看完，或到达事先约定的超时后，停止 DSH 与子进程，释放端口，并只清理拥有匹配 owner marker/runId 的临时 profile 和文件。若用户要求暂时保留，报告 runId、端口、profile、截止时间和后续清理方式。
+
+现场预览是人工观察面，不单独证明兼容性。发布或 stock 兼容主张仍需要自动 smoke/probe、`result.json` 与 `provenance.json`；GIF 仍按其验收或展示目的单独判断。Host-only 插件如果没有 Browser 页面，提供 dump-config、状态/API probe、CLI 输出或日志中的脱敏观察面，不为展示而伪造 UI。
+
 ## PR 前检查清单
 
 - [ ] `git diff --check` 无问题；
