@@ -37,7 +37,7 @@ test → build → verify → pack
                          预览表现 → 查看能力/兼容性 → 决定安装
 ```
 
-与 DSH Market 结合时，GitHub 中标准化的展示动画、功能说明、版本与验证信息可以成为市场详情页素材，形成接近 App Store 的体验：用户先看表现和能力，再决定是否安装，而不是安装后才发现不符合预期。
+展示 GIF 还可以与 DSH Market 展示插件 GitHub 图片的能力结合：市场直接呈现插件的安装后预览，形成类似 App Store 的“先看效果，再决定是否安装”体验。
 
 现场预览、自动 smoke 和展示 GIF 各自解决不同问题：现场预览用于自由探索，smoke 用断言和 provenance 证明结论，GIF 用于 GitHub 与市场中的异步预览。
 
